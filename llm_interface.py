@@ -8,6 +8,7 @@ provider di LLM (Large Language Models):
 
 - Ollama (modelli locali come llama3.2, mistral, etc.)
 - OpenAI (GPT-4, GPT-3.5-turbo, etc.)
+- Groq (llama3, mixtral, gemma - velocissimi)
 - Anthropic (Claude)
 
 L'interfaccia permette di:
@@ -20,6 +21,7 @@ Architettura:
 - BaseLLM: Classe astratta che definisce l'interfaccia
 - OllamaLLM: Implementazione per Ollama
 - OpenAILLM: Implementazione per OpenAI
+- GroqLLM: Implementazione per Groq
 - AnthropicLLM: Implementazione per Anthropic
 - LLMInterface: Factory class che crea l'istanza giusta
 
@@ -588,6 +590,399 @@ class OpenAILLM(BaseLLM):
 
 
 # ----------------------------------------------------------------------------
+# GROQ IMPLEMENTATION
+# ----------------------------------------------------------------------------
+class GroqLLM(BaseLLM):
+    """
+    Implementazione per Groq - LLM ultrarapidi in cloud.
+
+    Groq offre inference estremamente veloce per modelli open source
+    grazie alla loro hardware personalizzato (LPU - Language Processing Unit).
+
+    Modelli supportati:
+    - llama-3.1-70b-versatile: Llama 3.1 70B (molto capace)
+    - llama-3.1-8b-instant: Llama 3.1 8B (velocissimo)
+    - llama3-70b-8192: Llama 3 70B
+    - llama3-8b-8192: Llama 3 8B
+    - mixtral-8x7b-32768: Mixtral 8x7B (ottimo mix velocità/qualità)
+    - gemma-7b-it: Google Gemma 7B
+
+    Vantaggi:
+    - VELOCITÀ ESTREMA: inference 10-100x più veloce di altri provider
+    - Modelli open source di alta qualità
+    - API gratuita (con rate limits)
+    - Supporta function calling
+    - Ottimo per prototipazione rapida
+
+    Svantaggi:
+    - Richiede API key
+    - Rate limits su tier gratuito
+    - Meno modelli disponibili rispetto a OpenAI
+    - Dati inviati a Groq (cloud)
+
+    API Key:
+    - Si legge da file: groq/API_groq.txt
+    - Oppure da env var: GROQ_API_KEY
+    - Ottieni chiave su: https://console.groq.com/
+    """
+
+    def __init__(self, model: str = "llama-3.1-8b-instant", api_key: str = None, **kwargs):
+        """
+        Inizializza client Groq.
+
+        Args:
+            model: Nome modello (default: llama-3.1-8b-instant)
+            api_key: API key Groq (o usa file groq/API_groq.txt o env var GROQ_API_KEY)
+            **kwargs: Parametri addizionali
+        """
+        super().__init__(model, **kwargs)
+
+        # Ottieni API key con priorità: parametro > env var > file
+        self.api_key = api_key or self._load_api_key()
+
+        if not self.api_key or self.api_key == "YOUR_API_KEY_HERE":
+            logger.error("Groq API key not found or invalid!")
+            logger.info("To use Groq:")
+            logger.info("1. Get API key from https://console.groq.com/")
+            logger.info("2. Put it in groq/API_groq.txt")
+            logger.info("3. Or set GROQ_API_KEY environment variable")
+            raise ValueError("Groq API key required. See logs for instructions.")
+
+        logger.info("Initializing Groq client")
+
+        # Importa e inizializza client
+        try:
+            from groq import Groq
+            self.client = Groq(api_key=self.api_key)
+            logger.success("✓ Groq client initialized")
+            logger.info(f"Using Groq model: {self.model}")
+        except ImportError:
+            logger.error("Groq package not installed. Run: pip install groq")
+            raise RuntimeError("Groq package not found")
+        except Exception as e:
+            logger.error(f"Failed to initialize Groq client: {e}")
+            raise RuntimeError(f"Groq initialization failed: {e}")
+
+    def _load_api_key(self) -> Optional[str]:
+        """
+        Carica API key da diverse fonti.
+
+        Priorità:
+        1. Environment variable GROQ_API_KEY
+        2. File groq/API_groq.txt
+
+        Returns:
+            API key o None se non trovata
+        """
+        logger.debug("Loading Groq API key...")
+
+        # 1. Prova environment variable
+        api_key = os.getenv("GROQ_API_KEY")
+        if api_key:
+            logger.debug("✓ API key loaded from environment variable")
+            return api_key
+
+        # 2. Prova file groq/API_groq.txt
+        api_key_file = "groq/API_groq.txt"
+        try:
+            with open(api_key_file, 'r') as f:
+                # Leggi tutte le righe
+                lines = f.readlines()
+
+                # Trova la prima riga che non è commento o vuota
+                for line in lines:
+                    line = line.strip()
+
+                    # Salta commenti e righe vuote
+                    if not line or line.startswith('#'):
+                        continue
+
+                    # Questa dovrebbe essere l'API key
+                    logger.debug(f"✓ API key loaded from file: {api_key_file}")
+                    return line
+
+            logger.warning(f"File {api_key_file} exists but contains no valid API key")
+            return None
+
+        except FileNotFoundError:
+            logger.warning(f"API key file not found: {api_key_file}")
+            return None
+        except Exception as e:
+            logger.error(f"Error reading API key file: {e}")
+            return None
+
+    def generate(self, prompt: str, system: Optional[str] = None, **kwargs) -> str:
+        """
+        Genera risposta con Groq.
+
+        Args:
+            prompt: Prompt utente
+            system: System prompt (opzionale)
+            **kwargs: temperature, max_tokens, etc.
+
+        Returns:
+            Risposta generata
+        """
+        logger.debug(f"Generating with Groq model: {self.model}")
+
+        # Costruisci messaggi
+        messages = []
+        if system:
+            messages.append({"role": "system", "content": system})
+            logger.debug(f"Using system prompt: {system[:100]}...")
+
+        messages.append({"role": "user", "content": prompt})
+
+        try:
+            logger.info(f"Calling Groq API (model: {self.model})...")
+
+            # Chiama Groq API
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                temperature=kwargs.get("temperature", 0.7),
+                max_tokens=kwargs.get("max_tokens", 2000),
+            )
+
+            # Estrai contenuto
+            content = response.choices[0].message.content
+
+            logger.success(f"✓ Groq response received (length: {len(content)} chars)")
+            logger.debug(f"Response preview: {content[:200]}...")
+
+            # Log statistiche usage se disponibili
+            if hasattr(response, 'usage'):
+                logger.debug(f"Tokens used - prompt: {response.usage.prompt_tokens}, "
+                           f"completion: {response.usage.completion_tokens}, "
+                           f"total: {response.usage.total_tokens}")
+
+            return content
+
+        except Exception as e:
+            logger.error(f"Groq API call failed: {e}")
+            raise RuntimeError(f"Groq generation failed: {e}")
+
+    def chat(self, messages: List[Dict[str, str]], **kwargs) -> str:
+        """
+        Chat multi-turn con Groq.
+
+        Args:
+            messages: Lista messaggi conversazione
+            **kwargs: Parametri addizionali
+
+        Returns:
+            Risposta generata
+        """
+        logger.debug(f"Groq chat with {len(messages)} messages")
+
+        try:
+            # Log messaggi (solo preview)
+            for i, msg in enumerate(messages):
+                preview = msg['content'][:100]
+                logger.debug(f"  Message {i} ({msg['role']}): {preview}...")
+
+            logger.info(f"Calling Groq chat API (model: {self.model})...")
+
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                temperature=kwargs.get("temperature", 0.7),
+                max_tokens=kwargs.get("max_tokens", 2000)
+            )
+
+            content = response.choices[0].message.content
+            logger.success(f"✓ Groq chat response received (length: {len(content)} chars)")
+
+            return content
+
+        except Exception as e:
+            logger.error(f"Groq chat failed: {e}")
+            raise RuntimeError(f"Chat failed: {e}")
+
+    def function_call(self, query: str, tools: List[Dict], **kwargs) -> Dict[str, Any]:
+        """
+        Function calling con Groq.
+
+        Groq supporta function calling nativo per alcuni modelli.
+        Per modelli che non lo supportano, usa prompt engineering.
+
+        Args:
+            query: Query utente
+            tools: Lista tools disponibili
+            **kwargs: Parametri addizionali
+
+        Returns:
+            Dict con tool da chiamare e parametri
+        """
+        logger.info(f"Groq function calling for: {query[:100]}...")
+        logger.debug(f"Available tools: {len(tools)}")
+
+        # Lista modelli Groq con function calling nativo
+        # (al momento Groq sta estendendo il supporto)
+        native_fc_models = [
+            "llama-3.1-70b-versatile",
+            "llama-3.1-8b-instant",
+            "mixtral-8x7b-32768"
+        ]
+
+        # Prova function calling nativo se il modello lo supporta
+        if any(model in self.model for model in native_fc_models):
+            logger.debug("Model supports native function calling, trying native approach")
+
+            try:
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[{"role": "user", "content": query}],
+                    tools=tools,
+                    tool_choice="auto"
+                )
+
+                message = response.choices[0].message
+
+                # Check se ha chiamato un tool
+                if hasattr(message, 'tool_calls') and message.tool_calls:
+                    tool_call = message.tool_calls[0]
+                    result = {
+                        "tool": tool_call.function.name,
+                        "parameters": json.loads(tool_call.function.arguments),
+                        "reasoning": "Groq native function call"
+                    }
+                    logger.success(f"✓ Function call: {result['tool']}")
+                    return result
+
+            except Exception as e:
+                logger.warning(f"Native function calling failed, falling back to prompt engineering: {e}")
+
+        # Fallback: usa prompt engineering (come Ollama)
+        logger.debug("Using prompt engineering for function calling")
+
+        # Formatta tools per il prompt
+        tools_desc = self._format_tools_for_prompt(tools)
+
+        # Crea prompt per function calling
+        prompt = f"""You are a function calling assistant. Analyze the user query and decide which tool to call.
+
+User query: "{query}"
+
+Available tools:
+{tools_desc}
+
+Based on the query, decide which tool to call and with what parameters.
+
+IMPORTANT: Respond ONLY with a JSON object in this exact format:
+{{
+    "tool": "tool_name",
+    "parameters": {{"param1": "value1", "param2": "value2"}},
+    "reasoning": "brief explanation why this tool"
+}}
+
+JSON response:"""
+
+        logger.debug("Sending function calling prompt to Groq")
+
+        try:
+            # Genera risposta con temperatura bassa per output più deterministico
+            response = self.generate(prompt, temperature=0.1)
+
+            # Parse JSON dalla risposta
+            result = self._parse_function_call(response)
+
+            logger.success(f"✓ Function call: {result['tool']} with {len(result.get('parameters', {}))} params")
+            logger.debug(f"Reasoning: {result.get('reasoning', 'N/A')}")
+
+            return result
+
+        except Exception as e:
+            logger.error(f"Function calling failed: {e}")
+            raise RuntimeError(f"Function call failed: {e}")
+
+    def _format_tools_for_prompt(self, tools: List[Dict]) -> str:
+        """
+        Formatta tools in descrizione testuale per il prompt.
+
+        Args:
+            tools: Lista tools
+
+        Returns:
+            Stringa con descrizioni tools
+        """
+        lines = []
+        for tool in tools:
+            func = tool.get('function', {})
+            name = func.get('name', 'unknown')
+            desc = func.get('description', 'No description')
+            params = func.get('parameters', {})
+
+            lines.append(f"- {name}: {desc}")
+
+            # Aggiungi info parametri
+            props = params.get('properties', {})
+            if props:
+                lines.append(f"  Parameters:")
+                for param_name, param_info in props.items():
+                    param_type = param_info.get('type', 'any')
+                    param_desc = param_info.get('description', '')
+                    lines.append(f"    - {param_name} ({param_type}): {param_desc}")
+
+            lines.append("")  # Linea vuota
+
+        return "\n".join(lines)
+
+    def _parse_function_call(self, response: str) -> Dict[str, Any]:
+        """
+        Parse risposta LLM per estrarre function call.
+
+        Il modello dovrebbe rispondere con JSON, ma potrebbe aggiungere
+        testo extra. Questa funzione cerca ed estrae il JSON.
+
+        Args:
+            response: Risposta del modello
+
+        Returns:
+            Dict con tool e parametri
+
+        Raises:
+            ValueError: Se parsing fallisce
+        """
+        logger.debug("Parsing function call from response")
+
+        try:
+            # Cerca blocco JSON nella risposta
+            # Trova primo { e ultimo }
+            start = response.find('{')
+            end = response.rfind('}') + 1
+
+            if start == -1 or end == 0:
+                raise ValueError("No JSON found in response")
+
+            json_str = response[start:end]
+            logger.debug(f"Extracted JSON: {json_str[:200]}...")
+
+            # Parse JSON
+            result = json.loads(json_str)
+
+            # Valida struttura
+            if 'tool' not in result:
+                raise ValueError("Missing 'tool' field in response")
+
+            # Aggiungi campi di default se mancanti
+            if 'parameters' not in result:
+                result['parameters'] = {}
+            if 'reasoning' not in result:
+                result['reasoning'] = ""
+
+            return result
+
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON parsing failed: {e}")
+            logger.error(f"Response was: {response}")
+            raise ValueError(f"Invalid JSON in response: {e}")
+        except Exception as e:
+            logger.error(f"Function call parsing failed: {e}")
+            raise ValueError(f"Failed to parse function call: {e}")
+
+
+# ----------------------------------------------------------------------------
 # LLM INTERFACE - Factory Class
 # ----------------------------------------------------------------------------
 class LLMInterface:
@@ -609,7 +1004,7 @@ class LLMInterface:
     def __init__(
         self,
         model: str = "llama3.2",
-        provider: Literal["ollama", "openai", "anthropic"] = "ollama",
+        provider: Literal["ollama", "openai", "groq", "anthropic"] = "ollama",
         **kwargs
     ):
         """
@@ -617,7 +1012,7 @@ class LLMInterface:
 
         Args:
             model: Nome del modello da usare
-            provider: Provider LLM ("ollama", "openai", "anthropic")
+            provider: Provider LLM ("ollama", "openai", "groq", "anthropic")
             **kwargs: Parametri addizionali per il provider
         """
         self.model = model
@@ -632,6 +1027,9 @@ class LLMInterface:
         elif self.provider == "openai":
             self.llm = OpenAILLM(model, **kwargs)
 
+        elif self.provider == "groq":
+            self.llm = GroqLLM(model, **kwargs)
+
         elif self.provider == "anthropic":
             # TODO: Implementare AnthropicLLM
             logger.error("Anthropic provider not yet implemented")
@@ -639,7 +1037,7 @@ class LLMInterface:
 
         else:
             logger.error(f"Unknown provider: {provider}")
-            raise ValueError(f"Unknown provider: {provider}. Use 'ollama', 'openai', or 'anthropic'")
+            raise ValueError(f"Unknown provider: {provider}. Use 'ollama', 'openai', 'groq', or 'anthropic'")
 
         logger.success(f"✓ LLM Interface ready: {provider}/{model}")
 

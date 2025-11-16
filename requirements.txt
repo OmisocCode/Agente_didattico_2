@@ -21,6 +21,11 @@ openai>=1.0.0
 # Richiede API key da Anthropic
 anthropic>=0.7.0
 
+# Groq: Client per Groq (LLM ultrarapidi in cloud)
+# Modelli open source con inference velocissima grazie a hardware LPU
+# API gratuita con rate limits - Ottieni key su https://console.groq.com/
+groq>=0.4.0
+
 # ----------------------------------------------------------------------------
 # Web Scraping - Librerie per scaricare e parsare HTML
 # ----------------------------------------------------------------------------
