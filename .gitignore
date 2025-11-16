@@ -1,0 +1,161 @@
+# ============================================================================
+# GITIGNORE - Web Scraper Agent
+# ============================================================================
+# File e cartelle da NON tracciare con git
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# Python
+# ----------------------------------------------------------------------------
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# ----------------------------------------------------------------------------
+# Virtual Environments
+# ----------------------------------------------------------------------------
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# ----------------------------------------------------------------------------
+# Environment Variables & Secrets
+# ----------------------------------------------------------------------------
+# IMPORTANTE: Non committare MAI file con API keys!
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+secrets.yaml
+secrets.json
+
+# ----------------------------------------------------------------------------
+# IDEs
+# ----------------------------------------------------------------------------
+# VSCode
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iml
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# ----------------------------------------------------------------------------
+# Project Specific
+# ----------------------------------------------------------------------------
+# Cache directory
+.cache/
+cache/
+*.cache
+
+# Log files
+*.log
+logs/
+agent.log
+
+# Debug files
+.debug/
+debug/
+
+# Downloaded webpages (raw responses)
+raw_responses/
+
+# Example cached results (opzionale, puoi togliere se vuoi committarli)
+examples/cached_results/*.pkl
+examples/cached_results/*.json
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# ----------------------------------------------------------------------------
+# OS
+# ----------------------------------------------------------------------------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# ----------------------------------------------------------------------------
+# Data & Media
+# ----------------------------------------------------------------------------
+# Large files
+*.csv
+*.xlsx
+*.pdf
+*.zip
+*.tar.gz
+
+# Images (se non necessarie)
+# *.png
+# *.jpg
+# *.jpeg
+# *.gif

@@ -1,0 +1,120 @@
+# ============================================================================
+# REQUIREMENTS - Web Scraper Agent
+# ============================================================================
+# File delle dipendenze Python per il progetto Agente Web Scraper Intelligente
+#
+# Installazione: pip install -r requirements.txt
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# LLM (Large Language Models) - Interfacce per modelli AI
+# ----------------------------------------------------------------------------
+# Ollama: Client Python per Ollama (LLM locale)
+# Permette di usare modelli come llama3.2, mistral, etc. localmente
+ollama>=0.1.0
+
+# OpenAI: Client ufficiale per GPT-4, GPT-3.5, etc. (opzionale)
+# Richiede API key da OpenAI
+openai>=1.0.0
+
+# Anthropic: Client per Claude (opzionale)
+# Richiede API key da Anthropic
+anthropic>=0.7.0
+
+# ----------------------------------------------------------------------------
+# Web Scraping - Librerie per scaricare e parsare HTML
+# ----------------------------------------------------------------------------
+# Requests: HTTP library per scaricare pagine web
+# La libreria standard de-facto per HTTP in Python
+requests>=2.31.0
+
+# BeautifulSoup4: Parser HTML/XML per estrarre dati da pagine web
+# Facilita navigazione e ricerca nel DOM
+beautifulsoup4>=4.12.0
+
+# lxml: Parser veloce per HTML e XML
+# Usato come backend da BeautifulSoup per performance migliori
+lxml>=4.9.0
+
+# Readability-lxml: Estrae contenuto principale da pagine web
+# Rimuove ads, sidebar, footer mantenendo solo il contenuto rilevante
+readability-lxml>=0.8.1
+
+# Selenium: Browser automation (opzionale, per siti con JavaScript pesante)
+# selenium>=4.15.0
+
+# ----------------------------------------------------------------------------
+# Search - Librerie per ricerca web
+# ----------------------------------------------------------------------------
+# DuckDuckGo Search: Ricerca web SENZA bisogno di API key
+# Perfetto per iniziare senza configurazione
+duckduckgo-search>=4.0.0
+
+# Google API Client: Per Google Custom Search (opzionale)
+# Richiede API key e Search Engine ID da Google Cloud
+# google-api-python-client>=2.100.0
+
+# SerpAPI: API per Google/Bing/etc (opzionale)
+# Richiede API key da SerpAPI
+# google-search-results>=2.4.2
+
+# ----------------------------------------------------------------------------
+# Utilities - Librerie di supporto
+# ----------------------------------------------------------------------------
+# PyYAML: Parser per file YAML (usato per config.yaml)
+pyyaml>=6.0
+
+# Python-dotenv: Carica variabili ambiente da file .env
+# Gestisce API keys e configurazioni sensibili
+python-dotenv>=1.0.0
+
+# Validators: Validazione URL, email, etc.
+# Utile per verificare URL prima di scaricarli
+validators>=0.22.0
+
+# tqdm: Progress bars per operazioni lunghe
+# Mostra avanzamento durante scraping multipli
+tqdm>=4.66.0
+
+# Tenacity: Retry logic e gestione errori
+# Implementa retry automatico per richieste HTTP fallite
+tenacity>=8.2.0
+
+# Colorama: Output colorato in terminal (per logging più leggibile)
+colorama>=0.4.6
+
+# ----------------------------------------------------------------------------
+# Testing - Framework per test automatici
+# ----------------------------------------------------------------------------
+# Pytest: Framework di testing moderno per Python
+pytest>=7.4.0
+
+# Pytest-asyncio: Supporto per test asincroni
+pytest-asyncio>=0.21.0
+
+# Responses: Mock di HTTP requests per testing
+# Permette di testare senza fare chiamate HTTP reali
+responses>=0.23.0
+
+# Pytest-cov: Coverage report per i test
+# Mostra quali parti del codice sono coperte da test
+pytest-cov>=4.1.0
+
+# ----------------------------------------------------------------------------
+# Logging & Monitoring - Strumenti per debug e monitoraggio
+# ----------------------------------------------------------------------------
+# Loguru: Logging avanzato e user-friendly
+# Alternativa moderna al logging standard di Python
+loguru>=0.7.0
+
+# ----------------------------------------------------------------------------
+# Development - Tools per sviluppo (opzionali)
+# ----------------------------------------------------------------------------
+# Black: Code formatter
+# black>=23.0.0
+
+# Flake8: Linter per Python
+# flake8>=6.0.0
+
+# MyPy: Type checker statico
+# mypy>=1.5.0
