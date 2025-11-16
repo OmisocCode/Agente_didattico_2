@@ -1,0 +1,271 @@
+# ============================================================================
+# CONFIGURAZIONE - Web Scraper Agent
+# ============================================================================
+# File di configurazione principale per l'Agente Web Scraper Intelligente
+#
+# Questo file definisce tutti i parametri configurabili dell'agente:
+# - Modello LLM da usare
+# - Comportamento dei tools
+# - Limiti e timeout
+# - Logging e caching
+#
+# Formato: YAML (Yet Another Markup Language)
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# CONFIGURAZIONE AGENTE
+# ----------------------------------------------------------------------------
+agent:
+  # Modello LLM da utilizzare
+  # Opzioni comuni:
+  #   - llama3.2 (locale via Ollama, veloce, buono per testing)
+  #   - llama3.1 (locale via Ollama, più capace)
+  #   - mistral (locale via Ollama, ottimo bilanciamento)
+  #   - gpt-4 (OpenAI, richiede API key, molto capace ma costoso)
+  #   - gpt-3.5-turbo (OpenAI, economico e veloce)
+  #   - claude-3-opus (Anthropic, molto capace)
+  llm_model: "llama3.2"
+
+  # Provider LLM (ollama, openai, anthropic)
+  llm_provider: "ollama"
+
+  # Massimo numero di tools che l'agente può chiamare per una singola query
+  # Limita la complessità e previene loop infiniti
+  # Range consigliato: 3-10
+  max_tools_per_query: 5
+
+  # Abilita caching dei risultati
+  # Se true, risultati identici vengono recuperati dalla cache
+  # invece di rifare richieste HTTP
+  enable_caching: true
+
+  # Time-to-live della cache in secondi
+  # Dopo questo tempo, i risultati vengono considerati "stale"
+  # 3600 secondi = 1 ora
+  cache_ttl_seconds: 3600
+
+  # Massimo numero di messaggi da mantenere in memoria conversazione
+  # Previene che il context window diventi troppo grande
+  max_conversation_history: 10
+
+  # Temperatura per generazione LLM (0.0 = deterministico, 1.0 = creativo)
+  # Valori bassi (0.1-0.3) per task precisi, valori alti (0.7-1.0) per creatività
+  llm_temperature: 0.3
+
+  # Abilita verbose mode (più output di debug)
+  verbose: true
+
+# ----------------------------------------------------------------------------
+# CONFIGURAZIONE TOOLS - Settings per ogni tool disponibile
+# ----------------------------------------------------------------------------
+tools:
+  # -------------------------------------------------------------------------
+  # SEARCH_WEB - Ricerca informazioni sul web
+  # -------------------------------------------------------------------------
+  search_web:
+    # Abilita/disabilita questo tool
+    enabled: true
+
+    # Numero massimo di risultati da ritornare
+    # Più risultati = più tempo e più token LLM consumati
+    max_results: 10
+
+    # Numero di risultati di default se non specificato
+    default_results: 5
+
+    # Motore di ricerca da usare
+    # Opzioni: "duckduckgo" (no API key), "google" (richiede API key), "bing"
+    search_engine: "duckduckgo"
+
+    # Regione per i risultati (influenza lingua e risultati locali)
+    # Formato: lingua-paese (es: it-it, en-us, es-es)
+    region: "it-it"
+
+    # Safe search level: "off", "moderate", "strict"
+    safe_search: "moderate"
+
+    # Timeout per ogni ricerca in secondi
+    timeout_seconds: 10
+
+    # Numero massimo di retry in caso di errore
+    max_retries: 3
+
+  # -------------------------------------------------------------------------
+  # FETCH_WEBPAGE - Download e parsing di pagine web
+  # -------------------------------------------------------------------------
+  fetch_webpage:
+    # Abilita/disabilita questo tool
+    enabled: true
+
+    # Timeout per il download in secondi
+    # Importante per siti lenti o con problemi
+    timeout_seconds: 15
+
+    # Numero massimo di retry in caso di errore di rete
+    max_retries: 3
+
+    # User agent da usare nelle richieste HTTP
+    # Alcuni siti bloccano user agent che sembrano bot
+    user_agent: "Mozilla/5.0 (Educational Web Scraper Agent) AppleWebKit/537.36"
+
+    # Estrai solo contenuto principale (rimuove ads, sidebar, footer)
+    # Usa readability-lxml per pulizia automatica
+    extract_main_content: true
+
+    # Massima dimensione pagina da scaricare (in bytes)
+    # Previene download di file enormi (50MB)
+    max_page_size_bytes: 52428800  # 50 MB
+
+    # Segui redirect automaticamente
+    follow_redirects: true
+
+    # Massimo numero di redirect da seguire
+    max_redirects: 5
+
+    # Verifica certificati SSL (metti false solo per testing)
+    verify_ssl: true
+
+    # Estrai metadata dalla pagina (author, date, description, etc.)
+    extract_metadata: true
+
+    # Estrai tutti i link dalla pagina
+    extract_links: true
+
+    # Limita numero di link estratti
+    max_links: 100
+
+  # -------------------------------------------------------------------------
+  # EXTRACT_STRUCTURED_DATA - Estrazione dati con CSS selectors
+  # -------------------------------------------------------------------------
+  extract_structured_data:
+    # Abilita/disabilita questo tool
+    enabled: true
+
+    # Massimo numero di elementi da estrarre
+    # Previene estrazione di migliaia di elementi
+    max_items: 500
+
+    # Timeout per parsing in secondi
+    timeout_seconds: 10
+
+  # -------------------------------------------------------------------------
+  # SUMMARIZE_CONTENT - Riassunto testi con LLM
+  # -------------------------------------------------------------------------
+  summarize_content:
+    # Abilita/disabilita questo tool
+    enabled: true
+
+    # Lunghezza massima del riassunto in parole
+    max_length_words: 500
+
+    # Lunghezza di default se non specificata
+    default_length_words: 200
+
+    # Stile di default per i riassunti
+    # Opzioni: "concise", "detailed", "bullet_points"
+    default_style: "concise"
+
+    # Massima lunghezza del testo input (in caratteri)
+    # Testi più lunghi vengono troncati
+    max_input_length: 10000
+
+  # -------------------------------------------------------------------------
+  # COMPARE_SOURCES - Confronto di fonti multiple
+  # -------------------------------------------------------------------------
+  compare_sources:
+    # Abilita/disabilita questo tool
+    enabled: true
+
+    # Numero minimo di fonti necessarie
+    min_sources: 2
+
+    # Numero massimo di fonti da confrontare
+    # Più fonti = più tempo di processing
+    max_sources: 5
+
+    # Massima lunghezza del contenuto per ogni fonte (caratteri)
+    # Previene context window overflow
+    max_content_per_source: 2000
+
+# ----------------------------------------------------------------------------
+# LOGGING - Configurazione sistema di logging
+# ----------------------------------------------------------------------------
+logging:
+  # Livello di logging
+  # DEBUG: Tutto, inclusi dettagli interni
+  # INFO: Informazioni generali sull'esecuzione
+  # WARNING: Solo warning ed errori
+  # ERROR: Solo errori
+  level: "INFO"
+
+  # File dove salvare i log (null = solo console)
+  file: "agent.log"
+
+  # Formato log
+  # Opzioni: "simple", "detailed", "json"
+  format: "detailed"
+
+  # Rotazione file log (quando supera max_size_mb)
+  rotation: "10 MB"
+
+  # Mantieni ultimi N file di log
+  retention: 5
+
+  # Log anche su console oltre che su file
+  console_output: true
+
+  # Colora output console (rende più leggibile)
+  colorize_console: true
+
+# ----------------------------------------------------------------------------
+# PERFORMANCE - Ottimizzazioni e limiti
+# ----------------------------------------------------------------------------
+performance:
+  # Abilita esecuzione parallela di tool indipendenti
+  # (feature futura, non ancora implementata)
+  enable_parallel_execution: false
+
+  # Numero massimo di workers paralleli
+  max_parallel_workers: 3
+
+  # Timeout globale per una query completa (secondi)
+  # Previene che query complesse girino all'infinito
+  global_query_timeout: 300  # 5 minuti
+
+  # Rate limiting: numero massimo di richieste HTTP al secondo
+  # Previene di essere bloccati dai siti
+  max_requests_per_second: 2
+
+# ----------------------------------------------------------------------------
+# CACHE - Configurazione sistema di caching
+# ----------------------------------------------------------------------------
+cache:
+  # Directory dove salvare i file di cache
+  directory: ".cache"
+
+  # Strategia di caching
+  # Opzioni: "memory" (RAM), "disk" (file), "both"
+  strategy: "disk"
+
+  # Dimensione massima cache su disco (MB)
+  max_size_mb: 500
+
+  # Pulizia automatica cache quando supera max_size
+  auto_cleanup: true
+
+# ----------------------------------------------------------------------------
+# DEVELOPMENT - Settings per sviluppo e debug
+# ----------------------------------------------------------------------------
+development:
+  # Mock mode: usa dati fake invece di chiamate HTTP reali
+  # Utile per testing senza internet
+  mock_mode: false
+
+  # Directory con dati mock
+  mock_data_directory: "examples/cached_results"
+
+  # Salva tutte le risposte HTTP per debugging
+  save_raw_responses: false
+
+  # Directory per risposte raw
+  raw_responses_directory: ".debug/raw_responses"
